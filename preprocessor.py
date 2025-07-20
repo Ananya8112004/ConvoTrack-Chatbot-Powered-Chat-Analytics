@@ -54,3 +54,40 @@ def preprocess(data):
     df['period'] = period
 
     return df
+
+
+
+
+import pandas as pd
+import re
+
+def preprocess_chat(chat_text):
+    # Regex to match WhatsApp messages
+    pattern = r'^(\d{1,2}/\d{1,2}/\d{2,4}), (\d{1,2}:\d{2}[^ ]*) - (.*)$'
+    messages = []
+    current_message = ""
+    current_date = ""
+    current_time = ""
+
+    for line in chat_text.split("\n"):
+        match = re.match(pattern, line)
+        if match:
+            if current_message:
+                messages.append([current_date, current_time, sender, current_message.strip()])
+            current_date, current_time, message = match.groups()
+
+            if ": " in message:
+                sender, message = message.split(": ", 1)
+            else:
+                sender = "group_notification"
+            current_message = message
+        else:
+            # Continuation of previous message
+            current_message += " " + line.strip()
+
+    # Add last message
+    if current_message:
+        messages.append([current_date, current_time, sender, current_message.strip()])
+
+    df = pd.DataFrame(messages, columns=["Date", "Time", "Sender", "Message"])
+    return df
